@@ -8,6 +8,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.ArrayList;
 
 import redis.clients.jedis.Jedis;
 
@@ -52,6 +53,14 @@ public class WikiSearch {
 			System.out.println(entry);
 		}
 	}
+
+	/**
+	 * Gets the map of urls to counts for a given term
+	 *
+	 */
+	public Map<String, Integer> getMap() {
+		return map;
+	}
 	
 	/**
 	 * Computes the union of two search results.
@@ -60,8 +69,13 @@ public class WikiSearch {
 	 * @return New WikiSearch object.
 	 */
 	public WikiSearch or(WikiSearch that) {
-        // FILL THIS IN!
-		return null;
+		Map<String, Integer> unionMap = new HashMap<String, Integer>(map);
+		Map<String, Integer> thatMap =  that.getMap();
+		for(String url: thatMap.keySet()) {
+			int relTotal = totalRelevance(getRelevance(url), that.getRelevance(url));
+			unionMap.put(url, relTotal);
+		}
+		return new WikiSearch(unionMap);
 	}
 	
 	/**
@@ -71,8 +85,15 @@ public class WikiSearch {
 	 * @return New WikiSearch object.
 	 */
 	public WikiSearch and(WikiSearch that) {
-        // FILL THIS IN!
-		return null;
+ 		Map<String, Integer> andMap = new HashMap<String, Integer>();
+		Map<String, Integer> thatMap =  that.getMap();
+		for(String urlThis: map.keySet()) {
+			if(thatMap.containsKey(urlThis)) {
+				int relTotal = totalRelevance(getRelevance(urlThis), that.getRelevance(urlThis));
+				andMap.put(urlThis, relTotal);
+			}
+		}
+		return new WikiSearch(andMap);
 	}
 	
 	/**
@@ -82,8 +103,12 @@ public class WikiSearch {
 	 * @return New WikiSearch object.
 	 */
 	public WikiSearch minus(WikiSearch that) {
-        // FILL THIS IN!
-		return null;
+        Map<String, Integer> minusMap = new HashMap<String, Integer>(map);
+        Map<String, Integer> thatMap =  that.getMap();
+        for(String urlThat: thatMap.keySet()) {
+        	minusMap.remove(urlThat);
+        }
+		return new WikiSearch(minusMap);
 	}
 	
 	/**
@@ -104,8 +129,16 @@ public class WikiSearch {
 	 * @return List of entries with URL and relevance.
 	 */
 	public List<Entry<String, Integer>> sort() {
-        // FILL THIS IN!
-		return null;
+        Comparator<Entry<String, Integer>> comparator =  new Comparator<Entry<String, Integer>>() {
+        	@Override
+        	public int compare(Entry<String, Integer> entry1, Entry<String, Integer> entry2){
+        		return entry1.getValue() - entry2.getValue();
+        	}
+        };
+        List<Entry<String, Integer>> mapEntries = new ArrayList<Entry<String, Integer>>();
+        mapEntries.addAll(map.entrySet());
+        Collections.sort(mapEntries, comparator);
+		return mapEntries;
 	}
 
 	/**
